@@ -1,0 +1,299 @@
+##### 1、MyTomcat类
+
+```java
+package myTomcatDemo;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+
+public class MyTomcat {
+    private  int port;
+    public MyTomcat(int port){
+        this.port=port;
+
+    }
+
+    public void  start() throws IOException {
+        initServletMap();
+        ServerSocket serverSocket=new ServerSocket(port);
+        System.out.println("myTomcat is started..."+port);
+        Socket socket=null;
+        while(true) {
+
+            socket = serverSocket.accept();
+            InputStream inputStream = socket.getInputStream();
+            OutputStream outputStream = socket.getOutputStream();
+
+            MyRequest myRequest=new MyRequest(inputStream);
+            MyResponse myResponse=new MyResponse(outputStream);
+           // myResponse.write("hello world!!!----");
+            myResponse.write("hello world!!");
+            disPath(myRequest,myResponse);
+            socket.close();
+        }
+
+    }
+
+    //初始化方法
+    private Map<String,String> urlServletMap=new HashMap<>();
+    private void initServletMap(){
+        for(MyServletMap myServletMap:MyServletMapConfig.list){
+            urlServletMap.put(myServletMap.getUrl(),myServletMap.getClazz());
+
+        }
+    }
+
+    //请求分发
+
+    public void disPath(MyRequest myRequest,MyResponse myResponse){
+        String clazz=urlServletMap.get(myRequest.getUrl());
+        if(clazz==null){
+            return;
+        }
+
+        //反射
+        try {
+            Class<MyServlet>  myServletClass=( Class<MyServlet>)Class.forName(clazz);
+            MyServlet myServlet=myServletClass.newInstance();
+            myServlet.service(myRequest,myResponse);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+            new MyTomcat(8088).start();
+    }
+}
+```
+
+##### 2、MyRequest类
+
+```java
+package myTomcatDemo;
+
+import java.io.IOException;
+import java.io.InputStream;
+
+public class MyRequest {
+    private  String url;
+    private  String method;
+
+    public MyRequest(InputStream inputStream) throws IOException {
+        String httpRequest="";
+        byte[]  bytes=new byte[1024];
+        int length=0;
+        if((length=inputStream.read(bytes))>0){
+            httpRequest=new String(bytes,0,length);
+        }
+        String httpHead=httpRequest.split("\n")[0];
+        url=httpHead.split("\\s")[1];
+        method=httpHead.split("\\s")[0];
+        System.out.println(this);
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public void setMethod(String method) {
+        this.method = method;
+
+
+    }
+}
+```
+
+
+
+##### 3、MyResponse 类
+
+```java
+package myTomcatDemo;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+public class MyResponse {
+    private OutputStream outputStream;
+    public  MyResponse(OutputStream outputStream){
+        this.outputStream=outputStream;
+    }
+
+    public void write(String content) throws IOException {
+        StringBuffer httpResponse=new StringBuffer();
+        httpResponse.append("HTTP/1.1 200 OK\n")
+                .append("Content-Type:text/html\n")
+                .append("\r\n")
+                .append("<html><body>")
+                .append(content)
+                .append("</body></html>");
+        outputStream.write(httpResponse.toString().getBytes());
+        outputStream.close();
+
+    }
+}
+```
+
+
+
+##### 4、MyServlet类
+
+```java
+package myTomcatDemo;
+
+public  abstract class MyServlet {
+    public abstract  void doGet(MyRequest myRequest,MyResponse myResponse);
+    public abstract  void doPost(MyRequest myRequest,MyResponse myResponse);
+    public void service(MyRequest myRequest,MyResponse myResponse){
+        if(myRequest.getMethod().equalsIgnoreCase("POST")){
+            doPost(myRequest,myResponse);
+        }else if(myRequest.getMethod().equalsIgnoreCase("GET")){
+            doGet(myRequest,myResponse);
+        }
+
+    }
+
+
+}
+```
+
+##### 5、MyServletMap类
+
+```java
+package myTomcatDemo;
+
+public class MyServletMap {
+    private  String servletName;
+    private  String url;
+    private String clazz;
+
+    public MyServletMap(String servletName, String url, String clazz) {
+        this.servletName = servletName;
+        this.url = url;
+        this.clazz = clazz;
+    }
+
+    public String getServletName() {
+        return servletName;
+    }
+
+    public void setServletName(String servletName) {
+        this.servletName = servletName;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    public String getClazz() {
+        return clazz;
+    }
+
+    public void setClazz(String clazz) {
+        this.clazz = clazz;
+    }
+
+
+
+}
+```
+
+##### 6、MyServletMapConfig类
+
+```java
+package myTomcatDemo;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class MyServletMapConfig {
+    public static List<MyServletMap> list=new ArrayList<>();
+    static {
+        list.add(new MyServletMap("login","/login","myTomcatDemo.LoginServlet"));
+        list.add(new MyServletMap("delete","/delete","myTomcatDemo.DeleteServlet"));
+    }
+}
+```
+
+
+
+##### 7、DeleteServlet类
+
+```java
+package myTomcatDemo;
+
+import java.io.IOException;
+
+public class DeleteServlet extends MyServlet {
+    @Override
+    public void doGet(MyRequest myRequest, MyResponse myResponse) {
+        try {
+            myResponse.write("delete success ... GET");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void doPost(MyRequest myRequest, MyResponse myResponse) {
+        try {
+            myResponse.write("delete success....POST");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+
+
+##### 8、LoginServlet类
+
+```java
+package myTomcatDemo;
+
+import java.io.IOException;
+
+public class LoginServlet extends  MyServlet {
+
+    @Override
+    public void doGet(MyRequest myRequest, MyResponse myResponse) {
+        try {
+            myResponse.write("login success....GET");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void doPost(MyRequest myRequest, MyResponse myResponse) {
+        try {
+            myResponse.write("login success....POST");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```

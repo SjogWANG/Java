@@ -1,0 +1,13 @@
+use telnet(TCP) check if remote port open
+
+telnet [ip] [port]
+
+netcat -z/-uz [ip] [port]
+
+uz is for UDP
+
+
+
+netstat -ano -p tcp|find "8080"
+tasklist|find "17180"
+TASKKILL /F /PID 3472

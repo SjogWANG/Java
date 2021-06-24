@@ -1,0 +1,22 @@
+
+PolarDB数据库文档：https://shimo.im/docs/PHY9j8Wr3pGJtxpT/read
+云服务器搭建：https://shimo.im/docs/pGjvtWrjrKKXvPdC/ 
+淘宝架构演进任务卡：https://itdage.com/file/2030101.pdf
+
+==================================================================
+BT-Panel default info!
+==================================================================
+外网面板地址: http://47.74.84.30:8888
+内网面板地址: http://172.30.20.110:8888
+*以下仅为初始默认账户密码，若无法登录请执行bt命令重置账户/密码登录
+username: 3hfys6xv
+password: 84c6dd85fcd5
+If you cannot access the panel,
+release the following panel port [8888] in the security group
+若无法访问面板，请检查防火墙/安全组是否有放行面板[8888]端口
+
+
+
+url=jdbc:mysql://shanwang.mysql.polardb.australia.rds.aliyuncs.com/kkb_db
+user=shangwang
+password=Adrian@1977
